@@ -1,0 +1,28 @@
+{
+  "id": "community.online_mod_noserver",
+  "version": "1.3.0",
+  "name": "Online Mod (Rezka, LordFilm, Kinouzel+)",
+  "description": "Онлайн-кинотеатры без сервера: HDRezka, LordFilm, Kinouzel, Ashdi, UAFilm и др. Работает мгновенно через GitHub Pages.",
+  "resources": ["catalog", "meta", "stream"],
+  "types": ["movie", "series"],
+  "catalogs": [
+    {
+      "type": "movie",
+      "id": "online_mod_top",
+      "name": "Популярные фильмы"
+    },
+    {
+      "type": "series",
+      "id": "online_mod_top",
+      "name": "Популярные сериалы"
+    }
+  ],
+  "idPrefixes": ["tt"],
+  "icon": "https://kras-s-savchik.github.io/online_mod_stremio.html/favicon.png",
+  "background": "https://image.tmdb.org/t/p/w1280/9n2t0tDT76YUFi3w2AswTyTnBV.jpg",
+  "behaviorHints": {
+    "adult": false,
+    "configurable": false
+  },
+  "endpoint": "https://kras-s-savchik.github.io/online_mod_stremio.html"
+}
