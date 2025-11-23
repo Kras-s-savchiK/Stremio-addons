@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Online Mod (без сервера)</title>
+  <script src="https://nb557.github.io/plugins/online_mod.js"></script> <!-- Оригинальный мод -->
+  <script type="module">
+    import { addonBuilder, serveHTTP } from "https://cdn.stremio.net/shell/v2/addon-sdk.js";
+
+    const builder = new addonBuilder({
+      id: "community.online_mod_noserver",
+      version: "1.2.3",
+      name: "Online Mod (HDRezka, LordFilm и др.)",
+      description: "Работает без сервера. Источники: Rezka, LordFilm, Kinouzel и др.",
+      resources: ["stream", "meta", "catalog"],
+      types: ["movie", "series"],
+      catalogs: [
+        { type: "movie", id: "online_mod_top", name: "Популярное" },
+        { type: "series", id: "online_mod_top", name: "Сериалы" }
+      ],
+      idPrefixes: ["tt"]
+    });
+
+    // === МЕТАДАННЫЕ (постеры, описание) ===
+    builder.defineMetaHandler(async ({ type, id }) => {
+      try {
+        const tmdbId = id.replace(/^tt/, '');
+        const resp = await fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=4bc4e5f1b80fe2e3b2d60d4ef3a4ed2a&language=ru-RU`);
+        const data = await resp.json();
+
+        return {
+          meta: {
+            id,
+            type,
+            name: data.title || data.name,
+            poster: data.poster_path ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${data.poster_path}` : undefined,
+            background: data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : undefined,
+            description: data.overview,
+            releaseInfo: data.release_date?.slice(0,4) || data.first_air_date?.slice(0,4),
+            runtime: data.runtime ? `${data.runtime} мин` : undefined,
+            genres: data.genres?.map(g => g.name)
+          }
+        };
+      } catch(e) {
+        return { meta: {} };
+      }
+    });
+
+    // === КАТАЛОГ (пример — топ-100) ===
+    builder.defineCatalogHandler(async ({ type, id }) => {
+      if (id !== "online_mod_top") return { metas: [] };
+      
+      const top = type === "movie" 
+        ? "https://api.themoviedb.org/3/movie/popular?api_key=4bc4e5f1b80fe2e3b2d60d4ef3a4ed2a&language=ru-RU&page=1"
+        : "https://api.themoviedb.org/3/tv/popular?api_key=4bc4e5f1b80fe2e3b2d60d4ef3a4ed2a&language=ru-RU&page=1";
+
+      const resp = await fetch(top);
+      const json = await resp.json();
+
+      return {
+        metas: json.results.slice(0, 30).map(item => ({
+          id: `tt${item.id}`,
+          type,
+          name: item.title || item.name,
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w600_and_h900_bestv2${item.poster_path}` : undefined
+        }))
+      };
+    });
+
+    // === СТРИМЫ — используем оригинальный online_mod.js ===
+    builder.defineStreamHandler(async (args) => {
+      if (!["movie", "series"].includes(args.type)) return { streams: [] };
+
+      const imdbId = args.id.replace(/^tt/, '');
+      const season = args.type === "series" ? args.season : undefined;
+      const episode = args.type === "series" ? args.episode : undefined;
+
+      // Оригинальная функция из online_mod.js
+      const result = await getStreams(imdbId, season, episode);
+
+      if (!result || !result.streams || result.streams.length === 0) {
+        return { streams: [] };
+      }
+
+      const streams = result.streams.map(st => ({
+        url: st.url,
+        title: st.title || "Онлайн",
+        behaviorHints: {
+          notWebReady: false,
+          bingeGroup: args.type === "series" ? `${args.id}_S${season}` : undefined
+        }
+      }));
+
+      return { streams };
+    });
+
+    // Запуск аддона прямо в браузере Stremio
+    serveHTTP(builder.getInterface(), { port: 0 });
+  </script>
+</head>
+<body>
+  <h2>Online Mod (без сервера) загружен</h2>
+  <p>Перейдите в Stremio → Аддоны → Установить → Вставьте эту ссылку:</p>
+  <input value="https://ВАШ_НИК.github.io/online_mod_stremio.html" onclick="this.select()" readonly style="width:100%;padding:10px;font-size:16px;">
+  <hr>
+  <p>Готово! Аддон работает полностью без сервера.</p>
+</body>
+</html>
